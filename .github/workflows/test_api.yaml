@@ -1,0 +1,19 @@
+name: Test deployed API
+
+on:
+  workflow_dispatch:
+    inputs:
+      API_URL:
+        description: Remote API to test
+        required: true
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - uses: ruby/setup-ruby@v1
+      with:
+        ruby-version: 3.0 # Not needed with a .ruby-version file
+        bundler-cache: true # runs 'bundle install' and caches installed gems automatically
+    - run: SWAGGER_URL="${{ github.event.inputs.API_URL }}" bundle exec rake

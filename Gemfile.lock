@@ -1,0 +1,43 @@
+GEM
+  remote: https://rubygems.org/
+  specs:
+    addressable (2.8.0)
+      public_suffix (>= 2.0.2, < 5.0)
+    commonmarker (0.21.2)
+      ruby-enum (~> 0.5)
+    concurrent-ruby (1.1.9)
+    date (3.2.2)
+    i18n (1.10.0)
+      concurrent-ruby (~> 1.0)
+    json-schema (2.8.1)
+      addressable (>= 2.4)
+    minitest (5.15.0)
+    open-uri (0.2.0)
+      stringio
+      time
+      uri
+    openapi3_parser (0.9.0)
+      commonmarker (~> 0.17)
+      psych (~> 3.1)
+    psych (3.3.2)
+    public_suffix (4.0.6)
+    rake (13.0.6)
+    ruby-enum (0.9.0)
+      i18n
+    stringio (3.0.1)
+    time (0.2.0)
+      date
+    uri (0.11.0)
+
+PLATFORMS
+  ruby
+
+DEPENDENCIES
+  json-schema
+  minitest
+  open-uri
+  openapi3_parser
+  rake
+
+BUNDLED WITH
+   2.2.26
