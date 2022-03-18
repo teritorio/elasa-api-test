@@ -1,0 +1,17 @@
+name: Test deployed API
+
+inputs:
+  SWAGGER_URL:
+    description: Remote API to test
+    required: true
+
+runs:
+  using: "composite"
+  steps:
+  - uses: actions/checkout@v2
+  - uses: ruby/setup-ruby@v1
+    with:
+      ruby-version: 3.0 # Not needed with a .ruby-version file
+      bundler-cache: true # runs 'bundle install' and caches installed gems automatically
+  - run: SWAGGER_URL="${{ inputs.SWAGGER_URL }}" bundle exec rake
+    shell: bash
