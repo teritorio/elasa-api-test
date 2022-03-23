@@ -13,8 +13,15 @@ class TestMeme < Minitest::Test
     begin
       yaml = URI.open(@yaml_url).read
       document = Openapi3Parser.load(yaml)
-      # https://cdt40.carto.guide/api.teritorio/geodata/v0.1
-      @api_url = @yaml_url.split('/')[0..2].join('/') + document[:servers][0][:url] + '/a/b'
+      # https://cdt40.carto.guide/wp-content/plugins/ApiTeritorio/../../../api.teritorio/geodata/v0.1
+      @api_url = @yaml_url.split('/')[0..-2].join('/') + '/' + document[:servers][0][:url] + '/a/b'
+
+      # Simplfiy relative URL
+      prev_api_url = nil
+      while prev_api_url != @api_url do
+        prev_api_url = @api_url
+        @api_url = @api_url.gsub(/\/[^\/]*\/..\//, '/')
+      end
     rescue
     end
   end
@@ -30,18 +37,21 @@ class TestMeme < Minitest::Test
     url = "#{@api_url}/"
     json = URI.open(url).read
     assert json
+    JSON.parse(json)
   end
 
   def test_valid_menu
     url = "#{@api_url}/menu"
     json = URI.open(url).read
     assert json
+    JSON.parse(json)
   end
 
   def test_valid_pois
     url = "#{@api_url}/pois"
     json = URI.open(url).read
     assert json
+    JSON.parse(json)
   end
 
   def test_valid_pois_from_menu
