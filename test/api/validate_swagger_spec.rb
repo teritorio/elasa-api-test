@@ -5,24 +5,24 @@ require 'json-schema'
 require 'json'
 
 
-class TestMeme < Minitest::Test
+class ApiTest < Minitest::Test
   def setup
-    # https://cdt40.carto.guide/wp-content/plugins/ApiTeritorio/swagger-doc.yaml
+    # https://dev.appcarto.teritorio.xyz/content/wp-content/plugins/ApiTeritorio/swagger-doc.yaml
     @yaml_url = ENV['SWAGGER_URL']
 
     begin
       yaml = URI.open(@yaml_url).read
       document = Openapi3Parser.load(yaml)
-      # https://cdt40.carto.guide/wp-content/plugins/ApiTeritorio/../../../api.teritorio/geodata/v0.1
+      # https://dev.appcarto.teritorio.xyz/content/wp-content/plugins/ApiTeritorio/../../../api.teritorio/geodata/v0.1
       @api_url = @yaml_url.split('/')[0..-2].join('/') + '/' + document[:servers][0][:url] + '/a/b'
 
       # Simplfiy relative URL
       prev_api_url = nil
-      while prev_api_url != @api_url do
+      while prev_api_url != @api_url
         prev_api_url = @api_url
-        @api_url = @api_url.gsub(/\/[^\/]*\/..\//, '/')
+        @api_url = @api_url.gsub(%r{/[^/]*/../}, '/')
       end
-    rescue
+    rescue StandardError
     end
   end
 
