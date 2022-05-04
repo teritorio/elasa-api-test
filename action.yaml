@@ -1,12 +1,18 @@
 name: Test deployed API
 
 inputs:
+  ONTOLOGY_URL:
+    description: Ontology json
+    required: true
+    default: https://vecto.teritorio.xyz/data/teritorio-tourism-ontology-latest.json
   SWAGGER_URL:
     description: Remote API to test
     required: true
+    default: https://dev.appcarto.teritorio.xyz/content/wp-content/plugins/ApiTeritorio/swagger-doc.yaml
 
 runs:
   using: 'docker'
   image: 'Dockerfile'
   args:
     - ${{ inputs.SWAGGER_URL }}
+    - ${{ inputs.ONTOLOGY_URL }}

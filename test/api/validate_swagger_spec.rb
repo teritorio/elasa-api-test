@@ -22,6 +22,8 @@ class ApiTest < Minitest::Test
         prev_api_url = @api_url
         @api_url = @api_url.gsub(%r{/[^/]*/../}, '/')
       end
+
+      @ontology = JSON.parse(URI.open(ENV['ONTOLOGY_URL']).read)
     rescue StandardError
     end
   end
@@ -40,11 +42,62 @@ class ApiTest < Minitest::Test
     JSON.parse(json)
   end
 
+  def valid_icon(icon, icons)
+    return true if icon.start_with?('glyphicons')
+    return true if icon.include?('teritorio-extra-')
+
+    i = icon.split(' ')[1].split('-')[1]
+    icons.include?(i)
+  rescue StandardError => e
+    false
+  end
+
+  def valid_style_class(style_class, ontology)
+    c = ontology['superclass'][style_class[0]]['class'][style_class[1]]
+    c['subclass'][style_class[2]] if style_class.size == 3
+    true
+  rescue StandardError => e
+    false
+  end
+
+  def ontology_icons_extract(ontology)
+    ontology['superclass'].collect{ |_id, superclass|
+      (
+        [_id] +
+        superclass['class'].keys +
+        superclass['class'].collect{ |_id, classes|
+          classes['subclass']&.keys
+        }
+      )
+    }.flatten.compact
+  end
+
   def test_valid_menu
     url = "#{@api_url}/menu"
     json = URI.open(url).read
     assert json
-    JSON.parse(json)
+    menu = JSON.parse(json)
+
+    ontology_icons = ontology_icons_extract(@ontology)
+
+    errors = menu.collect{ |menu_item|
+      menu_item['category'] || menu_item['menu_group']
+    }.compact.collect{ |category|
+      id = category['id']
+      if !category['icon']
+        "#{id} missing icon"
+      elsif !valid_icon(category['icon'], ontology_icons)
+        "#{id} invalid icon '#{category['icon']}'"
+      elsif category['style_merge']
+        if !category['style_class']
+          "#{id} missing style_class"
+        elsif !valid_style_class(category['style_class'], @ontology)
+          "#{id} invalid style_class '#{category['style_class'].join(';')}'"
+        end
+      end
+    }.compact
+
+    assert errors.empty?, errors
   end
 
   def test_valid_pois

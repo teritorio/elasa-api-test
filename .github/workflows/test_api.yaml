@@ -3,9 +3,14 @@ name: Test deployed API
 on:
   workflow_dispatch:
     inputs:
+      ONTOLOGY_URL:
+        description: Ontology json
+        required: true
+        default: https://vecto.teritorio.xyz/data/teritorio-tourism-ontology-latest.json
       SWAGGER_URL:
         description: Remote API to test
         required: true
+        default: https://dev.appcarto.teritorio.xyz/content/wp-content/plugins/ApiTeritorio/swagger-doc.yaml
 
 jobs:
   test:
@@ -14,4 +19,5 @@ jobs:
     - uses: actions/checkout@v2
     - uses: teritorio/elasa-api-test@master
       with:
+        ONTOLOGY_URL: ${{ github.event.inputs.ONTOLOGY_URL }}
         SWAGGER_URL: ${{ github.event.inputs.SWAGGER_URL }}
