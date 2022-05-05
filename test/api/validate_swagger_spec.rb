@@ -46,7 +46,10 @@ class ApiTest < Minitest::Test
     return true if icon.start_with?('glyphicons')
     return true if icon.include?('teritorio-extra-')
 
-    i = icon.split(' ')[1].split('-')[1]
+    return false if icon.split(' ', 2)[0] != 'teritorio'
+    return false if icon.split(' ', 2)[1].split('-', 2)[0] != 'teritorio'
+
+    i = icon.split(' ', 2)[1].split('-', 2)[1]
     icons.include?(i)
   rescue StandardError => e
     false
