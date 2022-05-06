@@ -23,7 +23,8 @@ class ApiTest < Minitest::Test
         @api_url = @api_url.gsub(%r{/[^/]*/../}, '/')
       end
 
-      @ontology = JSON.parse(URI.open(ENV['ONTOLOGY_URL']).read)
+      ontology = JSON.parse(URI.open(ENV['ONTOLOGY_URL']).read)
+      @ontology_icons = ontology_icons_extract(ontology)
     rescue StandardError
     end
   end
@@ -81,15 +82,13 @@ class ApiTest < Minitest::Test
     assert json
     menu = JSON.parse(json)
 
-    ontology_icons = ontology_icons_extract(@ontology)
-
     errors = menu.collect{ |menu_item|
       menu_item['category'] || menu_item['menu_group']
     }.compact.collect{ |category|
       id = category['id']
       if !category['icon']
         "#{id} missing icon"
-      elsif !valid_icon(category['icon'], ontology_icons)
+      elsif !valid_icon(category['icon'], @ontology_icons)
         "#{id} invalid icon '#{category['icon']}'"
       elsif category['style_merge']
         if !category['style_class']
@@ -107,7 +106,27 @@ class ApiTest < Minitest::Test
     url = "#{@api_url}/pois"
     json = URI.open(url).read
     assert json
-    JSON.parse(json)
+    pois = JSON.parse(json)
+
+    errors = []
+    pois['features'].select{ |poi|
+      icon = poi['properties']&.[]('display')&.[]('icon')
+      if !icon || icon == ''
+        errors << "POI missing icon (#{poi})"
+        false
+      else
+        true
+      end
+    }.collect{ |poi|
+      begin
+        [poi['properties']['display']['icon'], poi['properties']['metadata']] if poi['properties']['display'].key?('icon')
+      rescue StandardError
+      end
+    }.group_by{ |icon, _id| icon }.collect{ |icon, ids|
+      error << "POI invalid icon '#{icon}' (#{ids.join(',')})" if !valid_icon(icon, @ontology_icons)
+    }
+
+    assert errors.empty?, errors
   end
 
   def test_valid_pois_from_menu
