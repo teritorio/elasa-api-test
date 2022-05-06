@@ -23,8 +23,8 @@ class ApiTest < Minitest::Test
         @api_url = @api_url.gsub(%r{/[^/]*/../}, '/')
       end
 
-      ontology = JSON.parse(URI.open(ENV['ONTOLOGY_URL']).read)
-      @ontology_icons = ontology_icons_extract(ontology)
+      @ontology = JSON.parse(URI.open(ENV['ONTOLOGY_URL']).read)
+      @ontology_icons = ontology_icons_extract(@ontology)
     rescue StandardError
     end
   end
