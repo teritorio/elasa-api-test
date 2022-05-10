@@ -33,3 +33,12 @@ Layout/FirstHashElementIndentation:
 
 Style/NumericPredicate:
   Enabled: false
+
+Layout/ElseAlignment:
+  Enabled: false
+
+Layout/IndentationWidth:
+  Enabled: false
+
+Layout/EndAlignment:
+  Enabled: false

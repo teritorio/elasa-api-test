@@ -43,7 +43,37 @@ class ApiTest < Minitest::Test
     JSON.parse(json)
   end
 
-  def valid_icon(icon, icons)
+  def ontology_icons_extract(ontology)
+    h = Hash.new{ |hash, key| hash[key] = [] }
+    ontology['superclass'].collect{ |id, superclass|
+      h[[superclass['color_fill'], superclass['color_line']]] += (
+        [id] +
+        superclass['class'].keys +
+        superclass['class'].collect{ |_id, classes|
+          classes['subclass']&.keys
+        }
+      ).flatten.compact
+    }
+
+    # h.each{ |c, icons|
+    #   color_fill, color_line = c
+    #   icons.each{ |icon|
+    #     puts "UPDATE wp_postmeta JOIN wp_postmeta AS wp_postmeta_icon SET wp_postmeta.meta_value = '#{color_fill}' WHERE wp_postmeta_icon.meta_key = 'icon' AND wp_postmeta_icon.meta_value = 'teritorio teritorio-#{icon}' AND wp_postmeta_icon.post_id = wp_postmeta.post_id AND wp_postmeta.meta_key = 'color';"
+    #     puts "UPDATE wp_postmeta JOIN wp_postmeta AS wp_postmeta_icon SET wp_postmeta.meta_value = '#{color_line}' WHERE wp_postmeta_icon.meta_key = 'icon' AND wp_postmeta_icon.meta_value = 'teritorio teritorio-#{icon}' AND wp_postmeta_icon.post_id = wp_postmeta.post_id AND wp_postmeta.meta_key = 'color_text';"
+    #   }
+    # }
+
+    # h.each{ |c, icons|
+    #   color_fill, color_line = c
+    #   icons.each{ |icon|
+    #     puts "UPDATE sp_menuniveau3 SET color = '#{color_fill};#{color_line}' WHERE icon = 'teritorio teritorio-#{icon}';"
+    #   }
+    # }
+
+    h
+  end
+
+  def valid_icon(icon, ontology_icons)
     return true if icon.start_with?('glyphicons')
     return true if icon.include?('teritorio-extra-')
 
@@ -51,7 +81,29 @@ class ApiTest < Minitest::Test
     return false if icon.split(' ', 2)[1].split('-', 2)[0] != 'teritorio'
 
     i = icon.split(' ', 2)[1].split('-', 2)[1]
-    icons.include?(i)
+    ontology_icons.values.flatten.include?(i)
+  rescue StandardError => e
+    false
+  end
+
+  def valid_color(color_fill, color_line, icon, ontology_icons)
+    return true if icon.start_with?('glyphicons')
+    return true if icon.include?('teritorio-extra-')
+
+    ontology_icons.include?([color_fill, color_line])
+  rescue StandardError => e
+    false
+  end
+
+  def valid_color_icon(color_fill, color_line, icon, ontology_icons)
+    return true if icon.start_with?('glyphicons')
+    return true if icon.include?('teritorio-extra-')
+
+    return false if icon.split(' ', 2)[0] != 'teritorio'
+    return false if icon.split(' ', 2)[1].split('-', 2)[0] != 'teritorio'
+
+    i = icon.split(' ', 2)[1].split('-', 2)[1]
+    ontology_icons[[color_fill, color_line]].include?(i)
   rescue StandardError => e
     false
   end
@@ -64,18 +116,6 @@ class ApiTest < Minitest::Test
     false
   end
 
-  def ontology_icons_extract(ontology)
-    ontology['superclass'].collect{ |_id, superclass|
-      (
-        [_id] +
-        superclass['class'].keys +
-        superclass['class'].collect{ |_id, classes|
-          classes['subclass']&.keys
-        }
-      )
-    }.flatten.compact
-  end
-
   def test_valid_menu
     url = "#{@api_url}/menu"
     json = URI.open(url).read
@@ -86,20 +126,32 @@ class ApiTest < Minitest::Test
       menu_item['category'] || menu_item['menu_group']
     }.compact.collect{ |category|
       id = category['id']
-      if !category['icon']
+      err = []
+
+      err << if !category['color_fill'] || !category['color_line']
+        "#{id} missing color fill or line"
+      elsif !category['icon']
         "#{id} missing icon"
       elsif !valid_icon(category['icon'], @ontology_icons)
         "#{id} invalid icon '#{category['icon']}'"
-      elsif category['style_merge']
+      elsif !valid_color(category['color_fill'].downcase, category['color_line'].downcase, category['icon'], @ontology_icons)
+        "#{id} invalid colors '#{category['color_fill']}, #{category['color_line']}' ('#{category['icon']}')"
+      elsif !valid_color_icon(category['color_fill'].downcase, category['color_line'].downcase, category['icon'], @ontology_icons)
+        "#{id} invalid cople (color_fill, color_line, icon) ('#{category['color_fill']}, '#{category['color_line']}', '#{category['icon']}')"
+      end
+
+      err << if category['style_merge']
         if !category['style_class']
           "#{id} missing style_class"
         elsif !valid_style_class(category['style_class'], @ontology)
           "#{id} invalid style_class '#{category['style_class'].join(';')}'"
         end
       end
-    }.compact
 
-    assert errors.empty?, errors
+      err
+    }.flatten.compact
+
+    assert errors.empty?, errors.join("\n")
   end
 
   def test_valid_pois
@@ -109,7 +161,7 @@ class ApiTest < Minitest::Test
     pois = JSON.parse(json)
 
     errors = []
-    pois['features'].select{ |poi|
+    features = pois['features'].select{ |poi|
       icon = poi['properties']&.[]('display')&.[]('icon')
       if !icon || icon == ''
         errors << "POI missing icon (#{poi})"
@@ -119,14 +171,26 @@ class ApiTest < Minitest::Test
       end
     }.collect{ |poi|
       begin
-        [poi['properties']['display']['icon'], poi['properties']['metadata']] if poi['properties']['display'].key?('icon')
+        [
+          poi['properties']['display']['icon'],
+          poi['properties']['display']['color_fill'],
+          poi['properties']['display']['color_line'],
+          poi['properties']['metadata']
+        ] if poi['properties']['display'].key?('icon')
       rescue StandardError
       end
-    }.group_by{ |icon, _id| icon }.collect{ |icon, ids|
-      error << "POI invalid icon '#{icon}' (#{ids.join(',')})" if !valid_icon(icon, @ontology_icons)
     }
 
-    assert errors.empty?, errors
+    features.group_by{ |icon, _color_fill, _color_line, _id| icon }.collect{ |icon, ids|
+      errors << "POI invalid icon '#{icon}' (#{ids.join(',')})" if !valid_icon(icon, @ontology_icons)
+    }
+    features.group_by{ |icon, color_fill, color_line, _id| [icon, color_fill, color_line] }.collect{ |colors, ids|
+      if !valid_color(colors[1].downcase, colors[2].downcase, colors[0], @ontology_icons)
+        errors << "POI invalid colors for icon '#{colors}'"
+      end
+    }
+
+    assert errors.empty?, errors.join("\n")
   end
 
   def test_valid_pois_from_menu
