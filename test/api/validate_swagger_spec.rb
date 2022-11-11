@@ -8,7 +8,7 @@ require 'json'
 class ApiTest < Minitest::Test
   def setup
     # https://dev.appcarto.teritorio.xyz/content/wp-content/plugins/ApiTeritorio/swagger-doc.yaml
-    @yaml_url = ENV['SWAGGER_URL']
+    @yaml_url = ENV.fetch('SWAGGER_URL', nil)
 
     begin
       yaml = URI.open(@yaml_url).read
@@ -23,7 +23,7 @@ class ApiTest < Minitest::Test
         @api_url = @api_url.gsub(%r{/[^/]*/../}, '/')
       end
 
-      @ontology = JSON.parse(URI.open(ENV['ONTOLOGY_URL']).read)
+      @ontology = JSON.parse(URI.open(ENV.fetch('ONTOLOGY_URL', nil)).read)
       @ontology_icons = ontology_icons_extract(@ontology)
     rescue StandardError
     end
@@ -128,25 +128,29 @@ class ApiTest < Minitest::Test
       id = category['id']
       err = []
 
-      err << if !category['color_fill'] || !category['color_line']
-        "#{id} missing color fill or line"
-      elsif !category['icon']
-        "#{id} missing icon"
-      elsif !valid_icon(category['icon'], @ontology_icons)
-        "#{id} invalid icon '#{category['icon']}'"
-      elsif !valid_color(category['color_fill'].downcase, category['color_line'].downcase, category['icon'], @ontology_icons)
-        "#{id} invalid colors '#{category['color_fill']}, #{category['color_line']}' ('#{category['icon']}')"
-      elsif !valid_color_icon(category['color_fill'].downcase, category['color_line'].downcase, category['icon'], @ontology_icons)
-        "#{id} invalid cople (color_fill, color_line, icon) ('#{category['color_fill']}, '#{category['color_line']}', '#{category['icon']}')"
-      end
-
-      err << if category['style_merge']
-        if !category['style_class']
-          "#{id} missing style_class"
-        elsif !valid_style_class(category['style_class'], @ontology)
-          "#{id} invalid style_class '#{category['style_class'].join(';')}'"
+      err << (
+        if !category['color_fill'] || !category['color_line']
+          "#{id} missing color fill or line"
+        elsif !category['icon']
+          "#{id} missing icon"
+        elsif !valid_icon(category['icon'], @ontology_icons)
+          "#{id} invalid icon '#{category['icon']}'"
+        elsif !valid_color(category['color_fill'].downcase, category['color_line'].downcase, category['icon'], @ontology_icons)
+          "#{id} invalid colors '#{category['color_fill']}, #{category['color_line']}' ('#{category['icon']}')"
+        elsif !valid_color_icon(category['color_fill'].downcase, category['color_line'].downcase, category['icon'], @ontology_icons)
+          "#{id} invalid cople (color_fill, color_line, icon) ('#{category['color_fill']}, '#{category['color_line']}', '#{category['icon']}')"
         end
-      end
+      )
+
+      err << (
+        if category['style_merge']
+          if !category['style_class']
+            "#{id} missing style_class"
+          elsif !valid_style_class(category['style_class'], @ontology)
+            "#{id} invalid style_class '#{category['style_class'].join(';')}'"
+          end
+        end
+      )
 
       err
     }.flatten.compact
@@ -171,12 +175,14 @@ class ApiTest < Minitest::Test
       end
     }.collect{ |poi|
       begin
-        [
-          poi['properties']['display']['icon'],
-          poi['properties']['display']['color_fill'],
-          poi['properties']['display']['color_line'],
-          poi['properties']['metadata']
-        ] if poi['properties']['display'].key?('icon')
+        if poi['properties']['display'].key?('icon')
+          [
+            poi['properties']['display']['icon'],
+            poi['properties']['display']['color_fill'],
+            poi['properties']['display']['color_line'],
+            poi['properties']['metadata']
+          ]
+        end
       rescue StandardError
       end
     }
@@ -184,7 +190,7 @@ class ApiTest < Minitest::Test
     features.group_by{ |icon, _color_fill, _color_line, _id| icon }.collect{ |icon, ids|
       errors << "POI invalid icon '#{icon}' (#{ids.join(',')})" if !valid_icon(icon, @ontology_icons)
     }
-    features.group_by{ |icon, color_fill, color_line, _id| [icon, color_fill, color_line] }.collect{ |colors, ids|
+    features.group_by{ |icon, color_fill, color_line, _id| [icon, color_fill, color_line] }.collect{ |colors, _ids|
       if !valid_color(colors[1].downcase, colors[2].downcase, colors[0], @ontology_icons)
         errors << "POI invalid colors for icon '#{colors}'"
       end
