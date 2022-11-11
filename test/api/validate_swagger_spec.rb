@@ -214,4 +214,46 @@ class ApiTest < Minitest::Test
       assert json
     }
   end
+
+  def deep_translation(items, translations)
+    errors = []
+    items.each{ |item|
+      group = item['group']
+      if group
+        if !translations&.[](group)&.[]('label')&.[]('fr')
+          errors << "POI missing translation group #{group}.label.fr"
+        end
+
+        errors += deep_translation(item['fields'], translations)
+      elsif item['label']
+        field = item['field']
+        if !translations&.[](field)&.[]('label')&.[]('fr')
+          errors << "POI missing translation field #{field}.label.fr"
+        end
+      end
+    }
+    errors
+  end
+
+  def test_valid_pois_translations
+    url = "#{@api_url}/pois"
+    json = URI.open(url).read
+    assert json
+    pois = JSON.parse(json)
+
+    url = "#{@api_url}/attribute_translations/fr.json"
+    json = URI.open(url).read
+    assert json
+    translations = JSON.parse(json)
+
+    errors = pois['features'].collect{ |poi|
+      popup_fields = poi['properties']&.[]('editorial')&.[]('popup_fields')
+      details_fields = poi['properties']&.[]('editorial')&.[]('details_fields')
+      (popup_fields || []) + (details_fields || [])
+    }.collect{ |items|
+      deep_translation(items, translations)
+    }.flatten(1).uniq
+
+    assert errors.empty?, errors.join("\n")
+  end
 end
