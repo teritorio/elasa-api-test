@@ -215,28 +215,34 @@ class ApiTest < Minitest::Test
     }
   end
 
-  def deep_translation(items, translations)
+  def deep_label_translation(items, translations)
     errors = []
     items.each{ |item|
       group = item['group']
       if group
-        if !translations&.[](group)&.[]('label')&.[]('fr')
-          errors << "POI missing translation group #{group}.label.fr"
+        if !translations.dig(group, 'label', 'fr')
+          errors << "POI missing translation group label #{group}.label.fr"
         end
 
-        errors += deep_translation(item['fields'], translations)
+        errors += deep_label_translation(item['fields'], translations)
       elsif item['label']
         field = item['field']
-        if !translations&.[](field)&.[]('label')&.[]('fr')
-          errors << "POI missing translation field #{field}.label.fr"
+        if !translations.dig(field, 'label', 'fr')
+          errors << "POI missing translation field label #{field}.label.fr"
         end
       end
     }
     errors
   end
 
+  def key_value_translation(key, value, translations)
+    if !translations.dig(key, 'values', value, 'label', 'fr')
+      "POI missing translation field value #{key}.values.#{value}.label.fr"
+    end
+  end
+
   def test_valid_pois_translations
-    url = "#{@api_url}/pois"
+    url = "#{@api_url}/pois.geojson"
     json = URI.open(url).read
     assert json
     pois = JSON.parse(json)
@@ -246,12 +252,24 @@ class ApiTest < Minitest::Test
     assert json
     translations = JSON.parse(json)
 
-    errors = pois['features'].collect{ |poi|
-      popup_fields = poi['properties']&.[]('editorial')&.[]('popup_fields')
-      details_fields = poi['properties']&.[]('editorial')&.[]('details_fields')
+    errors = []
+
+    # Key
+    errors += pois['features'].collect{ |poi|
+      popup_fields = poi.dig('properties', 'editorial', 'popup_fields')
+      details_fields = poi.dig('properties', 'editorial', 'details_fields')
       (popup_fields || []) + (details_fields || [])
     }.collect{ |items|
-      deep_translation(items, translations)
+      deep_label_translation(items, translations)
+    }.flatten(1).uniq
+
+    # Value
+    values_keys = [/route:[^:]+:difficulty/]
+    errors += pois['features'].collect{ |poi|
+      keys = poi['properties'].keys.select{ |key| values_keys.find{ |match| match.match?(key) } }
+      keys.collect{ |key|
+        key_value_translation(key, poi['properties'][key], translations)
+      }.compact
     }.flatten(1).uniq
 
     assert errors.empty?, errors.join("\n")
