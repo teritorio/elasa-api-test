@@ -37,7 +37,7 @@ class ApiTest < Minitest::Test
   end
 
   def test_valid_settings
-    url = "#{@api_url}/"
+    url = "#{@api_url}/settings.json"
     json = URI.open(url).read
     assert json
     JSON.parse(json)
@@ -117,7 +117,7 @@ class ApiTest < Minitest::Test
   end
 
   def test_valid_menu
-    url = "#{@api_url}/menu"
+    url = "#{@api_url}/menu.json"
     json = URI.open(url).read
     assert json
     menu = JSON.parse(json)
@@ -159,7 +159,7 @@ class ApiTest < Minitest::Test
   end
 
   def test_valid_pois
-    url = "#{@api_url}/pois"
+    url = "#{@api_url}/pois.geojson"
     json = URI.open(url).read
     assert json
     pois = JSON.parse(json)
@@ -200,7 +200,7 @@ class ApiTest < Minitest::Test
   end
 
   def test_valid_pois_from_menu
-    url_menu = "#{@api_url}/menu"
+    url_menu = "#{@api_url}/menu.json"
     json_menu = URI.open(url_menu).read
     menu = JSON.parse(json_menu)
 
