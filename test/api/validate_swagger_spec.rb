@@ -191,7 +191,7 @@ class ApiTest < Minitest::Test
       errors << "POI invalid icon '#{icon}' (#{ids.join(',')})" if !valid_icon(icon, @ontology_icons)
     }
     features.group_by{ |icon, color_fill, color_line, _id| [icon, color_fill, color_line] }.collect{ |colors, _ids|
-      if !valid_color(colors[1].downcase, colors[2].downcase, colors[0], @ontology_icons)
+      if !valid_color(colors[1]&.downcase, colors[2]&.downcase, colors[0], @ontology_icons)
         errors << "POI invalid colors for icon '#{colors}'"
       end
     }
