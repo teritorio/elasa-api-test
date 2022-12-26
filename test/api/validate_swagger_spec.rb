@@ -82,7 +82,7 @@ class ApiTest < Minitest::Test
 
     i = icon.split(' ', 2)[1].split('-', 2)[1]
     ontology_icons.values.flatten.include?(i)
-  rescue StandardError => e
+  rescue StandardError
     false
   end
 
@@ -91,7 +91,7 @@ class ApiTest < Minitest::Test
     return true if icon.include?('teritorio-extra-')
 
     ontology_icons.include?([color_fill, color_line])
-  rescue StandardError => e
+  rescue StandardError
     false
   end
 
@@ -104,7 +104,7 @@ class ApiTest < Minitest::Test
 
     i = icon.split(' ', 2)[1].split('-', 2)[1]
     ontology_icons[[color_fill, color_line]].include?(i)
-  rescue StandardError => e
+  rescue StandardError
     false
   end
 
@@ -112,7 +112,7 @@ class ApiTest < Minitest::Test
     c = ontology['superclass'][style_class[0]]['class'][style_class[1]]
     c['subclass'][style_class[2]] if style_class.size == 3
     true
-  rescue StandardError => e
+  rescue StandardError
     false
   end
 
