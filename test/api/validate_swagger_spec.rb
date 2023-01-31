@@ -33,7 +33,7 @@ class ApiTest < Minitest::Test
     puts @yaml_url
     yaml = URI.open(@yaml_url).read
     document = Openapi3Parser.load(yaml)
-    assert !document.valid?, document.errors
+    assert document.valid?
   end
 
   def test_valid_settings
