@@ -258,7 +258,8 @@ class ApiTest < Minitest::Test
     errors += pois['features'].collect{ |poi|
       popup_fields = poi.dig('properties', 'editorial', 'popup_fields')
       details_fields = poi.dig('properties', 'editorial', 'details_fields')
-      (popup_fields || []) + (details_fields || [])
+      list_fields = poi.dig('properties', 'editorial', 'list_fields')
+      (popup_fields || []) + (details_fields || []) + (list_fields || [])
     }.collect{ |items|
       deep_label_translation(items, translations)
     }.flatten(1).uniq
