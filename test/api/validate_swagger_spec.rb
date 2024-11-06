@@ -14,7 +14,7 @@ class ApiTest < Minitest::Test
       yaml = URI.open(@yaml_url).read
       document = Openapi3Parser.load(yaml)
       # https://dev.appcarto.teritorio.xyz/content/wp-content/plugins/ApiTeritorio/../../../api.teritorio/geodata/v0.1
-      @api_url = @yaml_url.split('/')[0..-2].join('/') + '/' + document[:servers][0][:url] + '/a/b'
+      @api_url = ENV.fetch('API_URL', nil)
 
       # Simplfiy relative URL
       prev_api_url = nil
@@ -33,7 +33,7 @@ class ApiTest < Minitest::Test
     puts @yaml_url
     yaml = URI.open(@yaml_url).read
     document = Openapi3Parser.load(yaml)
-    assert document.valid?
+    assert document.valid?, [@yaml_url, document.errors].inspect
   end
 
   def test_valid_settings
