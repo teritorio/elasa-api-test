@@ -236,9 +236,9 @@ class ApiTest < Minitest::Test
   end
 
   def key_value_translation(key, value, translations)
-    if !translations.dig(key, 'values', value, 'label', 'fr')
-      "POI missing translation field value #{key}.values.#{value}.label.fr"
-    end
+    return if translations.dig(key, 'values', value, 'label', 'fr')
+
+    "POI missing translation field value #{key}.values.#{value}.label.fr"
   end
 
   def test_valid_pois_translations
