@@ -6,11 +6,15 @@ on:
       ONTOLOGY_URL:
         description: Ontology json
         required: true
-        default: https://vecto.teritorio.xyz/data/teritorio-tourism-ontology-latest.json
+        default: https://teritorio.github.io/ontology-builder/teritorio-tourism-ontology-1.0.json
       SWAGGER_URL:
         description: Remote API to test
         required: true
-        default: https://dev.appcarto.teritorio.xyz/content/wp-content/plugins/ApiTeritorio/swagger-doc.yaml
+        default: https://elasa-dev.teritorio.xyz/static/elasa-0.1.swagger.yaml
+      API_URL:
+        description: Remote API to test
+        required: true
+        default: https://elasa-dev.teritorio.xyz/api/0.1/pointsdevue_eus/tourism
 
 jobs:
   test:
